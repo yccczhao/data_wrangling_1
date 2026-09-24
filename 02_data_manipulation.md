@@ -559,3 +559,169 @@ arrange(litters_df, desc(pups_born_alive))
     ## 10 Low7  #98                   23.8        43.8          20               9
     ## # ℹ 39 more rows
     ## # ℹ 2 more variables: pups_dead_birth <dbl>, pups_survive <dbl>
+
+## Do multiple steps
+
+This bad:
+
+``` r
+litters_df = read_csv("data_import_examples/FAS_litters.csv",na = c("", "NA", "."))
+```
+
+    ## Rows: 49 Columns: 8
+    ## ── Column specification ────────────────────────────────────────────────────────
+    ## Delimiter: ","
+    ## chr (2): Group, Litter Number
+    ## dbl (6): GD0 weight, GD18 weight, GD of Birth, Pups born alive, Pups dead @ ...
+    ## 
+    ## ℹ Use `spec()` to retrieve the full column specification for this data.
+    ## ℹ Specify the column types or set `show_col_types = FALSE` to quiet this message.
+
+``` r
+litters_rename_df = janitor::clean_names(litters_df)
+
+litters_with_gd_df = select(litters_rename_df, group, starts_with("gd"))
+
+litters_no_na_df = drop_na(litters_with_gd_df)
+
+litters_wt_gain_df = mutate(litters_no_na_df, wt_gain = gd18_weight - gd0_weight)
+```
+
+This is worse:
+
+``` r
+select(
+  janitor::clean_names(
+    read_csv("data_import_examples/FAS_litters.csv",na = c("", "NA", "."))),
+  group, starts_with("gd"))
+```
+
+    ## Rows: 49 Columns: 8
+    ## ── Column specification ────────────────────────────────────────────────────────
+    ## Delimiter: ","
+    ## chr (2): Group, Litter Number
+    ## dbl (6): GD0 weight, GD18 weight, GD of Birth, Pups born alive, Pups dead @ ...
+    ## 
+    ## ℹ Use `spec()` to retrieve the full column specification for this data.
+    ## ℹ Specify the column types or set `show_col_types = FALSE` to quiet this message.
+
+    ## # A tibble: 49 × 4
+    ##    group gd0_weight gd18_weight gd_of_birth
+    ##    <chr>      <dbl>       <dbl>       <dbl>
+    ##  1 Con7        19.7        34.7          20
+    ##  2 Con7        27          42            19
+    ##  3 Con7        26          41.4          19
+    ##  4 Con7        28.5        44.1          19
+    ##  5 Con7        NA          NA            20
+    ##  6 Con7        NA          NA            20
+    ##  7 Con7        NA          NA            20
+    ##  8 Con8        NA          NA            20
+    ##  9 Con8        NA          NA            20
+    ## 10 Con8        28.5        NA            20
+    ## # ℹ 39 more rows
+
+This is good:
+
+``` r
+litters_df = 
+  read_csv("data_import_examples/FAS_litters.csv", na = c("", "NA", ".")) |>
+  janitor::clean_names() |>
+  select(group, starts_with("gd")) |> 
+  drop_na() |> 
+  mutate(
+    wt_gain = gd18_weight - gd0_weight,
+    group = str_to_lower(group)
+  )
+```
+
+    ## Rows: 49 Columns: 8
+    ## ── Column specification ────────────────────────────────────────────────────────
+    ## Delimiter: ","
+    ## chr (2): Group, Litter Number
+    ## dbl (6): GD0 weight, GD18 weight, GD of Birth, Pups born alive, Pups dead @ ...
+    ## 
+    ## ℹ Use `spec()` to retrieve the full column specification for this data.
+    ## ℹ Specify the column types or set `show_col_types = FALSE` to quiet this message.
+
+Load pups, clean names, drop missing, keep litter number and pd
+variables, add pd walk -7
+
+``` r
+pups_df = 
+  read_csv("data_import_examples/FAS_pups.csv", skip = 3,na = c("", "NA", ".")) |>
+  janitor::clean_names() |> 
+  drop_na() |> 
+  select(litter_number, starts_with("pd")) |> 
+  mutate(
+    pd_walk_minus_7 = pd_walk - 7
+  )
+```
+
+    ## Rows: 313 Columns: 6
+    ## ── Column specification ────────────────────────────────────────────────────────
+    ## Delimiter: ","
+    ## chr (1): Litter Number
+    ## dbl (5): Sex, PD ears, PD eyes, PD pivot, PD walk
+    ## 
+    ## ℹ Use `spec()` to retrieve the full column specification for this data.
+    ## ℹ Specify the column types or set `show_col_types = FALSE` to quiet this message.
+
+sometime the first thing isn’t a dataframe
+
+``` r
+litters_df |> 
+  filter(group %in% c("con7", "con8")) |> 
+  lm(gd18_weight ~ gd0_weight, data = _)
+```
+
+    ## 
+    ## Call:
+    ## lm(formula = gd18_weight ~ gd0_weight, data = filter(litters_df, 
+    ##     group %in% c("con7", "con8")))
+    ## 
+    ## Coefficients:
+    ## (Intercept)   gd0_weight  
+    ##      14.013        1.049
+
+`select` vs `pull`
+
+``` r
+litters_df |> 
+  select(group)
+```
+
+    ## # A tibble: 31 × 1
+    ##    group
+    ##    <chr>
+    ##  1 con7 
+    ##  2 con7 
+    ##  3 con7 
+    ##  4 con7 
+    ##  5 mod7 
+    ##  6 mod7 
+    ##  7 mod7 
+    ##  8 mod7 
+    ##  9 mod7 
+    ## 10 mod7 
+    ## # ℹ 21 more rows
+
+``` r
+litters_df |> 
+  pull(group)
+```
+
+    ##  [1] "con7" "con7" "con7" "con7" "mod7" "mod7" "mod7" "mod7" "mod7" "mod7"
+    ## [11] "mod7" "low7" "low7" "low7" "low7" "low7" "low7" "low7" "low7" "mod8"
+    ## [21] "mod8" "mod8" "mod8" "mod8" "low8" "low8" "low8" "low8" "low8" "low8"
+    ## [31] "low8"
+
+never do `$`
+
+``` r
+litters_df$group
+```
+
+    ##  [1] "con7" "con7" "con7" "con7" "mod7" "mod7" "mod7" "mod7" "mod7" "mod7"
+    ## [11] "mod7" "low7" "low7" "low7" "low7" "low7" "low7" "low7" "low7" "mod8"
+    ## [21] "mod8" "mod8" "mod8" "mod8" "low8" "low8" "low8" "low8" "low8" "low8"
+    ## [31] "low8"

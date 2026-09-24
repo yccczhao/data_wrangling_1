@@ -129,6 +129,80 @@ arrange(litters_df, desc(pups_born_alive))
 ```
 
 
+## Do multiple steps
 
+This bad: 
+
+```{r}
+litters_df = read_csv("data_import_examples/FAS_litters.csv",na = c("", "NA", "."))
+
+litters_rename_df = janitor::clean_names(litters_df)
+
+litters_with_gd_df = select(litters_rename_df, group, starts_with("gd"))
+
+litters_no_na_df = drop_na(litters_with_gd_df)
+
+litters_wt_gain_df = mutate(litters_no_na_df, wt_gain = gd18_weight - gd0_weight)
+```
+
+This is worse:
+
+```{r}
+select(
+  janitor::clean_names(
+    read_csv("data_import_examples/FAS_litters.csv",na = c("", "NA", "."))),
+  group, starts_with("gd"))
+```
+
+This is good:
+
+```{r}
+litters_df = 
+  read_csv("data_import_examples/FAS_litters.csv", na = c("", "NA", ".")) |>
+  janitor::clean_names() |>
+  select(group, starts_with("gd")) |> 
+  drop_na() |> 
+  mutate(
+    wt_gain = gd18_weight - gd0_weight,
+    group = str_to_lower(group)
+  )
+```
+
+Load pups, clean names, drop missing, keep litter number and pd variables, add pd walk -7
+
+```{r}
+pups_df = 
+  read_csv("data_import_examples/FAS_pups.csv", skip = 3,na = c("", "NA", ".")) |>
+  janitor::clean_names() |> 
+  drop_na() |> 
+  select(litter_number, starts_with("pd")) |> 
+  mutate(
+    pd_walk_minus_7 = pd_walk - 7
+  )
+```
+
+sometime the first thing isn't a dataframe
+
+```{r}
+litters_df |> 
+  filter(group %in% c("con7", "con8")) |> 
+  lm(gd18_weight ~ gd0_weight, data = _)
+```
+
+`select` vs `pull`
+
+```{r}
+litters_df |> 
+  select(group)
+
+litters_df |> 
+  pull(group)
+```
+
+never do `$`
+
+```{r}
+litters_df$group
+```
 
 
