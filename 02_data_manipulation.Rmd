@@ -205,4 +205,10 @@ never do `$`
 litters_df$group
 ```
 
+pipes and viewing
+
+```{r}
+litters_df |> 
+  filter(group %in% c("con7", "con8"))
+```
 
