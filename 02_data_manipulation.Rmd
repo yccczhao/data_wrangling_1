@@ -120,6 +120,15 @@ mutate(
 ```
 
 
+## `arange` the data
+
+```{r}
+arrange(litters_df, pups_born_alive)
+
+arrange(litters_df, desc(pups_born_alive))
+```
+
+
 
 
 
